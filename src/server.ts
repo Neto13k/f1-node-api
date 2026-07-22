@@ -274,6 +274,6 @@ server.get<{Params: TeamParams}>("/teams/:id/drivers", {
   }
 });
 
-server.listen({ port: 9000 }, () => {
+server.listen({ port: parseInt(process.env.PORT || "9000") }, () => {
   console.log("Server is running on port 9000");
 });
