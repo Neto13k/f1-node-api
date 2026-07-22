@@ -1,3 +1,4 @@
+// API atualmente read-only, dados em memória, sem persistência. CRUD não implementado nesta versão.
 import fastify from "fastify";
 import cors from "@fastify/cors";
 
@@ -63,35 +64,215 @@ const drivers = [
   { id: 20, name: "Gabriel Bortoleto", team: "Sauber (Audi)" }
 ];
 
-server.get("/teams", async (request, response) => {
-  response.type("application/json").code(200).send;
-
-  return { teams };
+server.get("/teams", {
+  schema: {
+    response: {
+      200: {
+        type: "object",
+        properties: {
+          teams: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "number" },
+                name: { type: "string" },
+                base: { type: "string" }
+              },
+              required: ["id", "name", "base"]
+            }
+          }
+        },
+        required: ["teams"]
+      }
+    }
+  }
+}, async (request, response) => {
+  response.type("application/json").code(200).send({ teams });
 });
 
-server.get("/drivers", async (request, response) => {
-  response.type("application/json").code(200).send;
-
-  return { drivers };
+server.get("/drivers", {
+  schema: {
+    response: {
+      200: {
+        type: "object",
+        properties: {
+          drivers: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "number" },
+                name: { type: "string" },
+                team: { type: "string" }
+              },
+              required: ["id", "name", "team"]
+            }
+          }
+        },
+        required: ["drivers"]
+      }
+    }
+  }
+}, async (request, response) => {
+  response.type("application/json").code(200).send({ drivers });
 });
 
 interface DriverParams {
   id: string;
 }
 
-server.get<{Params: DriverParams}>("/drivers/:id", async (request, response) => {
+server.get<{Params: DriverParams}>("/drivers/:id", {
+  schema: {
+    params: {
+      type: "object",
+      properties: {
+        id: { type: "string", pattern: "^[0-9]+$" }
+      },
+      required: ["id"]
+    },
+    response: {
+      200: {
+        type: "object",
+        properties: {
+          driver: {
+            type: "object",
+            properties: {
+              id: { type: "number" },
+              name: { type: "string" },
+              team: { type: "string" }
+            },
+            required: ["id", "name", "team"]
+          }
+        },
+        required: ["driver"]
+      },
+      404: {
+        type: "object",
+        properties: {
+          message: { type: "string" }
+        },
+        required: ["message"]
+      }
+    }
+  }
+}, async (request, response) => {
   const id = parseInt(request.params.id);
   const driver = drivers.find((d) => d.id === id);
 
   if (!driver) {
-    response.type("application/json").code(404).send;
-    return { message: "Driver not found" };
+    response.type("application/json").code(404).send({ message: "Driver not found" });
+  } else {
+    response.type("application/json").code(200).send({ driver });
   }
-  else{}
-    response.type("application/json").code(200).send;
-    return { driver };
+});
+
+interface TeamParams {
+  id: string;
+}
+
+server.get<{Params: TeamParams}>("/teams/:id", {
+  schema: {
+    params: {
+      type: "object",
+      properties: {
+        id: { type: "string", pattern: "^[0-9]+$" }
+      },
+      required: ["id"]
+    },
+    response: {
+      200: {
+        type: "object",
+        properties: {
+          team: {
+            type: "object",
+            properties: {
+              id: { type: "number" },
+              name: { type: "string" },
+              base: { type: "string" }
+            },
+            required: ["id", "name", "base"]
+          }
+        },
+        required: ["team"]
+      },
+      404: {
+        type: "object",
+        properties: {
+          message: { type: "string" }
+        },
+        required: ["message"]
+      }
+    }
   }
-);
+}, async (request, response) => {
+  const id = parseInt(request.params.id);
+  const team = teams.find((t) => t.id === id);
+
+  if (!team) {
+    response.type("application/json").code(404).send({ message: "Team not found" });
+  } else {
+    response.type("application/json").code(200).send({ team });
+  }
+});
+
+server.get<{Params: TeamParams}>("/teams/:id/drivers", {
+  schema: {
+    params: {
+      type: "object",
+      properties: {
+        id: { type: "string", pattern: "^[0-9]+$" }
+      },
+      required: ["id"]
+    },
+    response: {
+      200: {
+        type: "object",
+        properties: {
+          team: {
+            type: "object",
+            properties: {
+              id: { type: "number" },
+              name: { type: "string" },
+              base: { type: "string" }
+            },
+            required: ["id", "name", "base"]
+          },
+          drivers: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "number" },
+                name: { type: "string" },
+                team: { type: "string" }
+              },
+              required: ["id", "name", "team"]
+            }
+          }
+        },
+        required: ["team", "drivers"]
+      },
+      404: {
+        type: "object",
+        properties: {
+          message: { type: "string" }
+        },
+        required: ["message"]
+      }
+    }
+  }
+}, async (request, response) => {
+  const id = parseInt(request.params.id);
+  const team = teams.find((t) => t.id === id);
+
+  if (!team) {
+    response.type("application/json").code(404).send({ message: "Team not found" });
+  } else {
+    const teamDrivers = drivers.filter((d) => d.team === team.name);
+    response.type("application/json").code(200).send({ team, drivers: teamDrivers });
+  }
+});
 
 server.listen({ port: 9000 }, () => {
   console.log("Server is running on port 9000");
