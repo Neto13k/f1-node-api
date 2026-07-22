@@ -99,4 +99,8 @@ Todas as rotas retornam `404` com `{ "message": "..." }` quando o recurso não �
 
 ## Licença
 
-ISC
+MIT
+
+## Autor
+
+José Hermes
